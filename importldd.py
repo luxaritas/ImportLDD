@@ -369,7 +369,7 @@ class Geometry:
         if lod == None:
             geompath = GEOMETRIEPATH
         else:
-            geompath = database.location + 'brickprimitives/lod' + lod + '/'
+            geompath = os.path.join(database.location, 'brickprimitives', 'lod' + lod + '/')
         
         GeometryLocation = os.path.normpath('{0}{1}{2}'.format(geompath, designID,'.g'))
         GeometryCount = 0
@@ -1405,7 +1405,7 @@ def convertldd_data(context, filepath, lddLIFPath, useLogoStuds, useLDDCamera):
 
     if (
         os.path.isdir(lddLIFPath)
-        and next((f for f in converter.database.filelist.keys() if f.startswith(converter.database.location + '/brickprimitives/')), None)
+        and next((f for f in converter.database.filelist.keys() if f.startswith(os.path.join(converter.database.location, 'brickprimitives'))), None)
     ):
         converter.LoadScene(filename=filepath)
         col = bpy.data.collections.new(converter.scene.Name)
