@@ -360,18 +360,19 @@ class GeometryReader:
         return ret
 
 class Geometry:
-    def __init__(self, designID, database):
+    def __init__(self, designID, database, lod):
         self.designID = designID
         self.Parts = {} 
         self.maxGeoBounding = -1	
         self.studsFields2D = []
+        self.lod = lod
         
-        GeometryLocation = os.path.normpath('{0}{1}{2}'.format(GEOMETRIEPATH, designID,'.g'))
+        GeometryLocation = os.path.normpath('{0}{1}/{2}{3}'.format(PRIMITIVEPATH, lod, designID,'.g'))
         GeometryCount = 0
         while str(GeometryLocation) in database.filelist:
             self.Parts[GeometryCount] = GeometryReader(data=database.filelist[GeometryLocation].read())
             GeometryCount += 1
-            GeometryLocation = os.path.normpath('{0}{1}{2}{3}'.format(GEOMETRIEPATH, designID,'.g',GeometryCount))
+            GeometryLocation = os.path.normpath('{0}{1}/{2}{3}{4}'.format(PRIMITIVEPATH, lod, designID,'.g',GeometryCount))
 
         primitive = Primitive(data = database.filelist[os.path.normpath(PRIMITIVEPATH + designID + '.xml')].read())
         self.Partname = primitive.Designname
@@ -935,7 +936,7 @@ class Converter:
         if self.database.initok:
             self.scene = Scene(file=filename)
 
-    def Export(self,filename, useLogoStuds, useLDDCamera):
+    def Export(self,filename, useLogoStuds, useLDDCamera, lod='LOD0'):
         invert = Matrix3D() 
         #invert.n33 = -1 #uncomment to invert the Z-Axis
         
@@ -965,7 +966,7 @@ class Converter:
         
         global_matrix = axis_conversion(from_forward='-Z', from_up='Y', to_forward='Y',to_up='Z').to_4x4()
         #col = bpy.data.collections.get("Collection")
-        col = bpy.data.collections.new(self.scene.Name)
+        col = bpy.data.collections.new(self.scene.Name + '-' + lod)
         bpy.context.scene.collection.children.link(col)
         
         if useLDDCamera == True:
@@ -986,7 +987,7 @@ class Converter:
                 currentpart += 1
 
                 if pa.designID not in geometriecache:
-                    geo = Geometry(designID=pa.designID, database=self.database)
+                    geo = Geometry(designID=pa.designID, database=self.database, lod=lod)
                     progress(current ,total , "(" + geo.designID + ") " + geo.Partname, ' ')
                     geometriecache[pa.designID] = geo
                     
@@ -1389,7 +1390,14 @@ def convertldd_data(context, filepath, lddLIFPath, useLogoStuds, useLDDCamera):
         print("Found db.lif. Will use this.")
         converter.LoadDatabase(databaselocation = lddLIFPath)
         
-    if (os.path.isdir(lddLIFPath) or os.path.isfile(lddLIFPath)):
+    if (os.path.isdir(lddLIFPath) and next(f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod0/'))):
+        converter.LoadScene(filename=filepath)
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod0')
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod1')
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod2')
+        print("Using LU LODs")
+    
+    elif (os.path.isdir(lddLIFPath) or os.path.isfile(lddLIFPath)):
         converter.LoadScene(filename=filepath)
         converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera)  
     
