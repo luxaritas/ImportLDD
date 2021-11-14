@@ -1046,7 +1046,7 @@ class Converter:
                     transform_matrix = mathutils.Matrix(((n11, n21, n31, n41),(n12, n22, n32, n42),(n13, n23, n33, n43),(n14, n24, n34, n44)))
 
                     # Random Scale for brick seams
-                    scalefact = (geo.maxGeoBounding - 0.025 * random.uniform(0.0, 1.000)) / geo.maxGeoBounding
+                    scalefact = (geo.maxGeoBounding - 0.000 * random.uniform(0.0, 1.000)) / geo.maxGeoBounding
 
                     # miny used for floor plane later
                     if miny > float(n42):
@@ -1431,13 +1431,13 @@ class ImportLDDOps(Operator, ImportHelper):
     useLogoStuds: BoolProperty(
         name="Show 'LEGO' logo on studs",
         description="Shows the LEGO logo on each stud (at the expense of some extra geometry and import time)",
-        default=True,
+        default=False,
     )
 
     useLDDCamera: BoolProperty(
         name="Import camera(s)",
         description="Import camera(s) from LEGO Digital Designer",
-        default=True,
+        default=False,
     )
 
     type: EnumProperty(
