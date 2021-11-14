@@ -365,14 +365,18 @@ class Geometry:
         self.Parts = {} 
         self.maxGeoBounding = -1	
         self.studsFields2D = []
-        self.lod = lod
         
-        GeometryLocation = os.path.normpath('{0}{1}/{2}{3}'.format(PRIMITIVEPATH, lod, designID,'.g'))
+        if lod == None:
+            lodpath = 'LOD0/'
+        else:
+            lodpath = 'lod' + lod + '/'
+        
+        GeometryLocation = os.path.normpath('{0}{1}{2}{3}'.format(PRIMITIVEPATH, lodpath, designID,'.g'))
         GeometryCount = 0
         while str(GeometryLocation) in database.filelist:
             self.Parts[GeometryCount] = GeometryReader(data=database.filelist[GeometryLocation].read())
             GeometryCount += 1
-            GeometryLocation = os.path.normpath('{0}{1}/{2}{3}{4}'.format(PRIMITIVEPATH, lod, designID,'.g',GeometryCount))
+            GeometryLocation = os.path.normpath('{0}{1}{2}{3}{4}'.format(PRIMITIVEPATH, lodpath, designID,'.g',GeometryCount))
 
         primitive = Primitive(data = database.filelist[os.path.normpath(PRIMITIVEPATH + designID + '.xml')].read())
         self.Partname = primitive.Designname
@@ -936,7 +940,7 @@ class Converter:
         if self.database.initok:
             self.scene = Scene(file=filename)
 
-    def Export(self,filename, useLogoStuds, useLDDCamera, lod='LOD0'):
+    def Export(self,filename, useLogoStuds, useLDDCamera, lod=None, parent_collection=None):
         invert = Matrix3D() 
         #invert.n33 = -1 #uncomment to invert the Z-Axis
         
@@ -966,8 +970,15 @@ class Converter:
         
         global_matrix = axis_conversion(from_forward='-Z', from_up='Y', to_forward='Y',to_up='Z').to_4x4()
         #col = bpy.data.collections.get("Collection")
-        col = bpy.data.collections.new(self.scene.Name + '-' + lod)
-        bpy.context.scene.collection.children.link(col)
+        if lod != None:
+            col = bpy.data.collections.new(self.scene.Name + '_LOD_' + lod)
+        else:
+            col = bpy.data.collections.new(self.scene.Name)
+        
+        if parent_collection:
+            parent_collection.children.link(col)
+        else:
+            bpy.context.scene.collection.children.link(col)
         
         if useLDDCamera == True:
             for cam in self.scene.Scenecamera:
@@ -1390,11 +1401,18 @@ def convertldd_data(context, filepath, lddLIFPath, useLogoStuds, useLDDCamera):
         print("Found db.lif. Will use this.")
         converter.LoadDatabase(databaselocation = lddLIFPath)
         
-    if (os.path.isdir(lddLIFPath) and next(f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod0/'))):
+    if (
+        os.path.isdir(lddLIFPath)
+        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod0/')), None)
+        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod1/')), None)
+        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod2/')), None)
+    ):
         converter.LoadScene(filename=filepath)
-        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod0')
-        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod1')
-        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='lod2')
+        col = bpy.data.collections.new(converter.scene.Name)
+        bpy.context.scene.collection.children.link(col)
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='0', parent_collection=col)
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='1', parent_collection=col)
+        converter.Export(filename=filepath, useLogoStuds=useLogoStuds, useLDDCamera=useLDDCamera, lod='2', parent_collection=col)
         print("Using LU LODs")
     
     elif (os.path.isdir(lddLIFPath) or os.path.isfile(lddLIFPath)):
