@@ -367,16 +367,16 @@ class Geometry:
         self.studsFields2D = []
         
         if lod == None:
-            lodpath = 'LOD0/'
+            geompath = GEOMETRIEPATH
         else:
-            lodpath = 'lod' + lod + '/'
+            geompath = database.location + 'brickprimitives/lod' + lod + '/'
         
-        GeometryLocation = os.path.normpath('{0}{1}{2}{3}'.format(PRIMITIVEPATH, lodpath, designID,'.g'))
+        GeometryLocation = os.path.normpath('{0}{1}{2}'.format(geompath, designID,'.g'))
         GeometryCount = 0
         while str(GeometryLocation) in database.filelist:
             self.Parts[GeometryCount] = GeometryReader(data=database.filelist[GeometryLocation].read())
             GeometryCount += 1
-            GeometryLocation = os.path.normpath('{0}{1}{2}{3}{4}'.format(PRIMITIVEPATH, lodpath, designID,'.g',GeometryCount))
+            GeometryLocation = os.path.normpath('{0}{1}{2}{3}'.format(geompath, designID,'.g',GeometryCount))
 
         primitive = Primitive(data = database.filelist[os.path.normpath(PRIMITIVEPATH + designID + '.xml')].read())
         self.Partname = primitive.Designname
@@ -1401,11 +1401,11 @@ def convertldd_data(context, filepath, lddLIFPath, useLogoStuds, useLDDCamera):
         print("Found db.lif. Will use this.")
         converter.LoadDatabase(databaselocation = lddLIFPath)
         
+    print(converter.database.filelist.keys())
+
     if (
         os.path.isdir(lddLIFPath)
-        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod0/')), None)
-        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod1/')), None)
-        and next((f for f in converter.database.filelist.keys() if f.startswith(PRIMITIVEPATH + 'lod2/')), None)
+        and next((f for f in converter.database.filelist.keys() if f.startswith(converter.database.location + '/brickprimitives/')), None)
     ):
         converter.LoadScene(filename=filepath)
         col = bpy.data.collections.new(converter.scene.Name)
